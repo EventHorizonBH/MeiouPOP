@@ -36,6 +36,11 @@ public class MeiouPOP {
     static File carpeta = new File(System.getProperty("user.dir")); // Directorio donde se ejecuta el programa
     static String paises[] = new String[]{"HAB", "POL", "PAP", "BRA", "MLO", "CAS", "MOS", "ENG", "OTT", "FRA", "DEN", "HOL"}; // Array con la lista de paises con jugador
     static String[] cabecera = {"TAG", "Pop rural", "Pop Upper", "Pop urbana", "Pop total"};
+    public static void limpiarLista(List<String[]> lista){
+        for (int i = 1; i < lista.size(); i++) {
+            lista.set(i,null);
+        }
+    }
 
     public static void main(String[] args) {
         //Scanner inputScan = new Scanner(System.in);
@@ -120,14 +125,21 @@ public class MeiouPOP {
                     list.add(fila);
 
                 }
+                try {
+                    Files.createDirectories(Paths.get(cwd+"\\resultados\\"));
+                } catch (IOException ex) {
+                    System.err.println("Fallo al crear el directorio resultados" + ex.getMessage());
+                }
+                try (CSVWriter writer = new CSVWriter(new FileWriter(cwd + "\\resultados\\resultados" + listaArchivos[j].getName() + ".csv"))) {
+                    writer.writeAll(list);
+                    limpiarLista(list);
+                } catch (IOException ex) {
+                    Logger.getLogger(MeiouPOP.class.getName()).log(Level.SEVERE, null, ex);
+                }
             } else {
                 System.out.println("No es un archivo, es una carpeta u otras cositas");
             }
         }
-        try (CSVWriter writer = new CSVWriter(new FileWriter(cwd + "\\resultados.csv"))) {
-            writer.writeAll(list);
-        } catch (IOException ex) {
-            Logger.getLogger(MeiouPOP.class.getName()).log(Level.SEVERE, null, ex);
-        }
     }
 }
+
