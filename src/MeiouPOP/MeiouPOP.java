@@ -16,6 +16,7 @@ import java.util.Scanner;
 import com.opencsv.CSVWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,8 +35,9 @@ public class MeiouPOP {
     static Charset charset = Charset.forName("ISO-8859-1"); // Formato del save
     static List<String> lines; // Array para almacenar las lineas del save
     static File carpeta = new File(System.getProperty("user.dir")); // Directorio donde se ejecuta el programa
-    static String paises[] = new String[]{"HAB", "POL", "PAP", "BRA", "MLO", "CAS", "MOS", "ENG", "OTT", "FRA", "DEN", "HOL", "LIT"}; // Array con la lista de paises con jugador
-    static String[] cabecera = {"TAG", "Pop rural", "Pop Upper", "Pop urbana", "Pop total", "Pop mundial", "Pop mundial urbana"};
+    static String paises[] = new String[]{"HAB", "POL", "PAP", "BRA", "MLO", "SPA", "RUS", "ENG", "OTT", "FRA", "DEN", "MUN"}; // Array con la lista de paises con jugador
+    static String[] cabecera = {"TAG", "Pop rural", "Pop Upper", "Pop urbana", "Pop total", "Pop mundial", "Pop mundial urbana", "Income anual"};
+    static int mundialPop = 0;
 
     // Metodo que limpia la lista con los datos para que se separen por save
     public static void limpiarLista(List<String[]> lista) {
@@ -43,12 +45,50 @@ public class MeiouPOP {
             lista.set(i, null);
         }
     }
-    
+
     // Obtiene la pop total mundial y la pop urbana mundial pero en vez de provincia a provincia la coge directamente del país
-    public static int[] obtenerMundo() {
-        int totalPop = 0;
-        int totalUrban = 0;
-        String popTotal = "";
+    public static long[] obtenerMundo() throws IOException {
+        lines = Files.readAllLines(Paths.get(fileName), charset);
+        long totalPop = 0;
+        long totalUrban = 0;
+        String rural = "";
+        String upper = "";
+        String urban = "";
+        String numeroRural = "";
+        String numeroUpper = "";
+        String numeroUrban = "";
+        long totalRural = 0;
+        long totalUpper = 0;
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (line.contains("rural_pop_display=")) {
+                rural = lines.get(i);
+                numeroRural = rural.substring(21).replace(".", "");
+                //System.out.println("Prueba = " + numeroRural);
+            }
+            if (line.contains("upper_pop_display=")) {
+                upper = lines.get(i);
+                numeroUpper = upper.substring(21).replace(".", "");
+                //System.out.println("Upper = " + numeroUpper);
+            }
+            if (line.contains("urban_pop_display=")) {
+                urban = lines.get(i);
+                numeroUrban = urban.substring(21).replace(".", "");
+                //System.out.println("Urban = " + numeroUrban);
+                //System.out.println();
+            }
+            // Suma el total de todas las provincias y muestra datos provincia a provincia
+            if (!numeroRural.equals("") && !numeroUrban.equals("") && !numeroUpper.equals("")) {
+                totalPop = 0;
+                totalRural = totalRural + Long.parseLong(numeroRural);
+                totalUpper = totalUpper + Long.parseLong(numeroUpper);
+                totalUrban = totalUrban + Long.parseLong(numeroUrban);
+            }
+        }
+        System.out.println();
+        totalPop = totalRural + totalUrban + totalUpper;
+        System.out.println("TOTAL POP DE TODAS ES: " + totalPop);
+        /*String popTotal = "";
         String popTotalUrban = "";
         String numeroPopTotal = "";
         String numeroPopTotalUrban = "";
@@ -57,17 +97,25 @@ public class MeiouPOP {
             if (line.contains("country_total_pop_r=")) {
                 popTotal = lines.get(i);
                 numeroPopTotal = popTotal.substring(24).replace(".", "");
-                totalPop = totalPop+ Integer.parseInt(numeroPopTotal);
+                totalPop = totalPop + Integer.parseInt(numeroPopTotal);
             }
             if (line.contains("country_total_urban=")) {
                 popTotalUrban = lines.get(i);
                 numeroPopTotalUrban = popTotalUrban.substring(24).replace(".", "");
                 totalUrban = totalUrban + Integer.parseInt(numeroPopTotalUrban);
             }
-        }
+        }*/
         //Pasa con el return un array con los dos valores
-        int[] mundo = {totalPop, totalUrban};
+        long[] mundo = {totalPop, totalUrban};
         return mundo;
+    }
+    public static double sumarIncome(String[] income){
+        double resultado = 0;
+        for (int i = 0; i < income.length; i++) {
+            String temp = income[i];
+            resultado = resultado + Double.parseDouble(temp);
+        }
+        return resultado;
     }
 
     // Para obtener los vasallos ( o un intento de )
@@ -85,7 +133,7 @@ public class MeiouPOP {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         List<String[]> list = new ArrayList<>();
         list.add(cabecera);
         File[] listaArchivos = carpeta.listFiles();
@@ -112,7 +160,7 @@ public class MeiouPOP {
                     for (int z = 0; z < paises.length; z++) {
                         String tag = paises[z];
                         System.out.println("TAG DEL PAÍS: " + tag + "\n");
-
+                        double resultado = 0;
                         int totalRural = 0;
                         int totalUpper = 0;
                         int totalUrban = 0;
@@ -151,23 +199,41 @@ public class MeiouPOP {
                                     totalUrban = totalUrban + Integer.parseInt(numeroUrban);
                                     System.out.println();
                                 }
-                                obtenerVasallo(line, tag, i);
+                                if (line.contains(tag+"={") && lines.get(i+1).contains("human=yes")) {
+                                    for (int x = i; x < lines.size(); x++) {
+                                        String tempLine = lines.get(x);
+                                        if (tempLine.contains("lastyearincome={")) {
+                                                String income = lines.get(x+1);
+                                                String[] incomeArray= income.split(" ");
+                                                resultado = sumarIncome(incomeArray);
+                                                System.out.println("INCOME " + resultado + " DE " + tag);
+                                                break;
+                                            }
 
+                                        }
+
+                                    }
+                                
+                                obtenerVasallo(line, tag, i);
+                                //obtenerIncome(line, i, tag);
+                                //obtenerIncome(line, i, tag);
                             }
                         } catch (Exception e) {
                             System.out.println("ERROR AL LEER EL SAVE");
                         }
                         // Muestra los datos del total
+
                         int total = totalRural + totalUpper + totalUrban;
                         System.out.println("Total pop rural: " + totalRural);
                         System.out.println("Total pop upper: " + totalUpper);
                         System.out.println("Total pop urban: " + totalUrban);
                         System.out.println("Total pop: " + total + " k");
                         System.out.println("");
+                        //System.out.println("MUNDIAL POP ENTERA DE ENTERAS " + mundialPop);
 
                         // Exportar a csv
-                        int[] popMundial = obtenerMundo();
-                        String[] fila = {tag, Integer.toString(totalRural), Integer.toString(totalUpper), Integer.toString(totalUrban), Integer.toString(total), Integer.toString(popMundial[0]), Integer.toString(popMundial[1])};
+                        long[] popMundial = obtenerMundo();
+                        String[] fila = {tag, Integer.toString(totalRural), Integer.toString(totalUpper), Integer.toString(totalUrban), Integer.toString(total), Long.toString(popMundial[0]).substring(0, Long.toString(popMundial[0]).length() - 3), Long.toString(popMundial[1]).substring(0, Long.toString(popMundial[0]).length() - 3), Double.toString(resultado)};
 
                         list.add(fila);
 
