@@ -166,6 +166,7 @@ public class MeiouPOP {
                 if (listaArchivos[j].isFile() && extension.equals("eu4")) { // Comprobamos que sea una archivo y su extension eu4 para que no lea los otros
                     fileName = cwd + "\\" + listaArchivos[j].getName();
                     lines = Files.readAllLines(Paths.get(fileName), charset);
+                    jugadores.clear();
                     detectarJugadores(); // Mete los jugadores dentro del arraylist para no tener que ponerlos a mano
                     long[] popMundial = obtenerMundo(); // Obtiene la pop mundial
                     System.out.println("POP MUNDIAL TOTAL = " + popMundial[0]);
