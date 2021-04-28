@@ -40,7 +40,7 @@ public class MeiouPOP {
     static Charset charset = Charset.forName("ISO-8859-1"); // Formato del save
     static List<String> lines; // Array para almacenar las lineas del save
     static File carpeta = new File(System.getProperty("user.dir")); // Directorio donde se ejecuta el programa
-    static String[] cabecera = {"TAG", "Pop urbana", "Pop total", "Pop mundial", "Pop mundial urbana", "Income anual"};
+    static String[] cabecera = {"TAG", "Pop urbana", "Pop total", "Pop mundial", "Pop mundial urbana", "Income anual", "Income mundial"};
     static int mundialPop = 0;
     static ArrayList<String> jugadores = new ArrayList<String>();
     static HashMap<String, Integer> provincias = new HashMap<String, Integer>();
@@ -94,7 +94,7 @@ public class MeiouPOP {
         long[] mundo = {totalPop, totalUrban};
         return mundo;
     }
-    
+
     // Coge todos los valores del income que estan separados por categorias y los suma 
     public static double sumarIncome(String[] income) {
         double resultado = 0;
@@ -104,6 +104,7 @@ public class MeiouPOP {
         }
         return resultado;
     }
+
     // Busca en el save paises que cumplan que son jugadores o eran, los mete en el array de jugadores
     public static void detectarJugadores() {
         for (int i = 0; i < lines.size(); i++) {
@@ -123,6 +124,7 @@ public class MeiouPOP {
             }
         }
     }
+
     // Ordena el HashMap que se le pase por parametro por valor e identificador ( si 2undo parametro true asc si false desc )
     private static HashMap<String, Integer> sortByValue(HashMap<String, Integer> unsortMap, final boolean order) {
         List<Entry<String, Integer>> list = new LinkedList<>(unsortMap.entrySet());
@@ -150,6 +152,23 @@ public class MeiouPOP {
                 }
             }
         }
+    }
+
+    public static double obtenerIncomeMundial() {
+        double incomeMundial = 0;
+        ArrayList<Double> incomes = new ArrayList<Double>();
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (line.contains("lastyearincome={")) {
+                String income = lines.get(i + 1);
+                String[] incomeArray = income.split(" ");
+                incomes.add(sumarIncome(incomeArray));
+            }
+        }
+        for (int j = 0; j < incomes.size(); j++) {
+            incomeMundial = incomeMundial + incomes.get(j);
+        }
+        return incomeMundial;
     }
 
     public static void main(String[] args) throws IOException {
@@ -265,33 +284,36 @@ public class MeiouPOP {
                             System.out.println("ERROR AL LEER EL SAVE");
                         }
                         // Muestra los datos del total
-
+                        Double incomeMundial = obtenerIncomeMundial();
                         // Exportar a csv
-                        String[] fila = {tag, Integer.toString(totalUrban), Integer.toString(total), Long.toString(popMundial[0]), Long.toString(popMundial[1]), Double.toString(resultado)};
+                        String[] fila = {tag, Integer.toString(totalUrban), Integer.toString(total), Long.toString(popMundial[0]), Long.toString(popMundial[1]), Double.toString(resultado), Double.toString(incomeMundial)};
 
                         list.add(fila);
 
                     }
                     //Coge los dos mapas con sus valores e identificadores, los ordena desc y luego muestra los 10 primeros pasandolos a listas
-                    HashMap<String, Integer> sortedMapAsc = sortByValue(provincias,false);
-                    List<Integer>listaTopPop = new ArrayList<>(sortedMapAsc.values());
-                    List<String>listaTopNombre = new ArrayList<>(sortedMapAsc.keySet());
+                    HashMap<String, Integer> sortedMapAsc = sortByValue(provincias, false);
+                    List<Integer> listaTopPop = new ArrayList<>(sortedMapAsc.values());
+                    List<String> listaTopNombre = new ArrayList<>(sortedMapAsc.keySet());
                     System.out.println("****************************************");
                     System.out.println(" TOP 10 PROVINCIAS POR POP DE JUGADORES ");
                     System.out.println("****************************************");
-                    for (int i = 0; i < 10; i++) {
-                        System.out.println((i+1) + ". " +listaTopNombre.get(i)+ " / " + listaTopPop.get(i));
+                    String display = "";
+                    for (int i = 0; i < 20; i++) {
+                        System.out.println((i + 1) + ". " + listaTopNombre.get(i) + " / " + listaTopPop.get(i));
                     }
+
                     //Coge los dos mapas con sus valores e identificadores, los ordena desc y luego muestra los 10 primeros pasandolos a listas
-                    HashMap<String, Integer> sortedMapAscUrban = sortByValue(provinciasUrban,false);
-                    List<Integer>listaUrbanPop = new ArrayList<>(sortedMapAscUrban.values());
-                    List<String>listaUrbanNombre = new ArrayList<>(sortedMapAscUrban.keySet());
+                    HashMap<String, Integer> sortedMapAscUrban = sortByValue(provinciasUrban, false);
+                    List<Integer> listaUrbanPop = new ArrayList<>(sortedMapAscUrban.values());
+                    List<String> listaUrbanNombre = new ArrayList<>(sortedMapAscUrban.keySet());
                     System.out.println("***********************************************");
                     System.out.println(" TOP 10 PROVINCIAS POR POP URBANA DE JUGADORES ");
                     System.out.println("***********************************************");
-                    for (int i = 0; i < 10; i++) {
-                        System.out.println((i+1) + ". " +listaUrbanNombre.get(i)+ " / " + listaUrbanPop.get(i));
+                    for (int i = 0; i < 20; i++) {
+                        System.out.println((i + 1) + ". " + listaUrbanNombre.get(i) + " / " + listaUrbanPop.get(i));
                     }
+                    
                     try {
                         Files.createDirectories(Paths.get(cwd + "\\resultados\\"));
                     } catch (IOException ex) {
